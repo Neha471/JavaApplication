@@ -1,0 +1,8 @@
+count occurrences of word in file linux
+shell script to count number of words in a file
+count occurrences of all words in file linux
+shell script to count number of lines in a file without using wc command
+shell script to counts number of lines and words in a file
+find count of string in file linux
+shell script to counting number of lines words and characters in a file
+count number of lines in a file linux
