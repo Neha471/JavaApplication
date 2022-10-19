@@ -1,0 +1,5 @@
+---
+- name: Create xml file
+  file:
+          path: /tmp/firstFile.xml
+          state: touch

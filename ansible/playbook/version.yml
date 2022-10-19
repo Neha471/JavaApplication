@@ -1,0 +1,5 @@
+---
+- name: Check Version
+  hosts: localhost
+  roles:
+          - checkVersion

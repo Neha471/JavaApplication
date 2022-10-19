@@ -1,0 +1,6 @@
+---
+- name: Create Jason or xml file  using Ansible at ~/tmp root location
+  hosts: localhost
+  roles:
+          - createFileJson
+          - createFileXML

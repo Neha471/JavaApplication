@@ -1,0 +1,5 @@
+---
+- name: Create jason file
+  file:
+    path: /tmp/firstFile.json
+    state: touch

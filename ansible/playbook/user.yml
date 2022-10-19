@@ -1,0 +1,6 @@
+---
+- name: Create user in the playbook
+  hosts: localhost
+  become: yes
+  roles:
+            - createUser

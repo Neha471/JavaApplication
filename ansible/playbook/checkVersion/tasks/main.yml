@@ -1,0 +1,8 @@
+---
+- name: Check Version
+  vars:
+          software: docker
+                                                    
+  shell: "{{ software }} --version"
+  register: version
+- debug: msg="{{ version.stdout }}"

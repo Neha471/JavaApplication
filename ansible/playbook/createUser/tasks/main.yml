@@ -1,0 +1,10 @@
+---
+- name: "Add the user name  jasmine"
+  user:
+    name: jasmine
+    comment: Jasmine
+    uid: 1077
+    group: root
+    createhome: yes     
+    home: /home/jasmine
+    shell: /bin/bash
