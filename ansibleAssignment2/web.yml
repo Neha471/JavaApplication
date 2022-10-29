@@ -1,0 +1,9 @@
+---
+- name: Web ServerDeployment
+  hosts: localhost
+  roles:
+          - deployHTMLPage
+
+  handlers:
+          - name: restart apache2
+            service: name=apache2 state=restarted

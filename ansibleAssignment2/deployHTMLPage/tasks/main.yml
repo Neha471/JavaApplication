@@ -1,0 +1,17 @@
+---
+- name: Install Apache2
+  apt: "name=apache2 update_cache=yes state=latest"
+
+- name: Copy HTML File
+  copy: "src=index.html dest=/var/www/html mode=0755"
+
+- name: Copy Image
+  copy: "src=image.jpg dest=/var/www/html"
+
+- name: Start Apache Service
+  service: "name=apache2 state=started"
+
+- name: Restart Apache Service
+  apache2_module: "name=rewrite state=present"
+  notify:
+          - restart apache2
