@@ -5,4 +5,4 @@ shell script to count number of lines in a file without using wc command
 shell script to counts number of lines and words in a file
 find count of string in file linux
 shell script to counting number of lines words and characters in a file
-count number of lines in a file linux
+count number of lines in a file Linux

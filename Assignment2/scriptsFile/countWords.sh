@@ -1,14 +1,16 @@
 #!/bin/bash
 #Desc: Find out frequency of words in a file
-
+#check the condition is there any file with script or not
 if [ $# -ne 1 ];
 then
 	echo "Usage: $0 filename";
 	exit -1
 fi
 
+#create variable for filename
 filename=$1
-egrep -o "\b[[:alpha:]]+\b" $filename | \
+#converts all words of uppercase in lowercase and returns the word
+tr '[:upper:]' '[:lower:]' <dummy.txt|egrep -o "\b[[:alpha:]]+\b" | \
 
 awk '{ count[$0]++ }
 END {printf("%-14s%s\n","Word","Count") ;
