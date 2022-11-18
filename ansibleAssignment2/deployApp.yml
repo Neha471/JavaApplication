@@ -1,0 +1,74 @@
+---
+- name: Deploy Application
+  hosts: all
+  remote_user: neha05
+  become: true
+  tasks:
+  - name: Update apt-get
+    apt: update_cache=yes
+  - name: check path
+    shell: pwd
+  - name: Install latest version of Apache
+    apt: name=apache2 update_cache=yes state=latest
+  - name: Install JAVA 
+    apt:
+      name: "{{ packages }}"
+      state: latest
+    vars:
+      packages:
+        - openjdk-11-jdk
+  - name: Install git
+    apt:
+      name: git
+      state: present
+      update_cache: yes
+  - name: Install Maven
+    apt:
+      name: maven
+      state: present
+  - name: Clone a github repository
+    git:
+      repo: https://github.com/Neha471/AnsibleApplication.git
+      dest: /home/neha05/AnsibleApplication/
+      clone: yes
+      update: yes
+    tags:
+      - clone
+        #- name: change permission of directory
+        #shell: chmod -R 777 /home/neha05/practise/practise
+        #- name: Create Tomcat Node directories
+        #file: path=/etc/tomcat state=directory mode=0777
+        #- name: Download Tomcat Package
+        #get_url: url=https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.68/bin/apache-tomcat-9.0.68.tar.gz dest='/etc/tomcat'
+        #- unarchive: src=/etc/tomcat/apache-tomcat-9.0.68.tar.gz dest=/etc/tomcat/ copy=no
+        #- name: Change ownership of tomcat directory
+        #file:
+        #path: /etc/tomcat/
+        #mode: "u+rwx,g+rx,o=rx"
+        #recurse: yes
+        #state: directory
+  - name: Build the application
+    command: mvn -f /home/neha05/AnsibleApplication/pom.xml clean install
+    register: mvn_result
+  - name: Maven clean task output
+    debug:
+      var: mvn_result
+      #- name: Copy war file to tomcat
+      #copy:
+      #src: /home/neha05/practise/practise/target/practise-0.0.1-SNAPSHOT.war
+      #dest: /etc/tomcat/apache-tomcat-9.0.68/webapps/
+      #mode: "u+rwx,g+rx,o=rx"
+      #remote_src: yes
+      #shell: cp /home/neha05/practise/practise/target/practise-0.0.1-SNAPSHOT.war /etc/tomcat/apache-tomcat-9.0.68/webapps/
+      #- name: change permission of war folder
+      #shell: sudo chmod -R 777 /etc/tomcat/apache-tomcat-9.0.68/webapps/practise-0.0.1-SNAPSHOT/
+      #- name: Restart Apache
+      #service: name=apache2 state=restarted
+      #- name: Start and Enable Tomcat 10 on sever
+      #command: nohup /etc/tomcat/apache-tomcat-9.0.68/bin/catalina.sh start
+  - name: start application
+    command: nohup java -jar /home/neha05/AnsibleApplication/target/dev-0.0.1-SNAPSHOT.jar &
+    register: java_result
+  - name: Jar output
+    debug: 
+      var: java_result
