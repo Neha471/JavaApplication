@@ -9,4 +9,4 @@
   become: yes
   become_method: sudo
   roles:
-    - roles/cmdb
+    - roles/cmdb/tasks
