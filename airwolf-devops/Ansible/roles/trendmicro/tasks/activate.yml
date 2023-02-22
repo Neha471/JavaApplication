@@ -1,0 +1,17 @@
+---
+# Construct dsa_control arguments
+- debug:
+    msg: "Construct dsa_control arguments."
+
+- set_fact:
+    dsa_control_argument: "'dsm://{{ dsm_agent_activation_hostname }}:{{ dsm_agent_activation_port }}/'"
+
+- set_fact:
+    dsa_control_argument: "{{ dsa_control_argument }} 'tenantID:{{ tenant_id }}' 'token:{{ token }}' 'policyid:{{ policy_id }}'"
+  when: tenant_id != none and token != none and policy_id != none
+
+- shell: |
+    MANAGERURL="'https://{{ dsm_agent_download_hostname }}:{{ dsm_agent_download_port }}'"
+    /opt/ds_agent/dsa_control -r
+    /opt/ds_agent/dsa_control -a {{ dsa_control_argument }}
+  become: yes

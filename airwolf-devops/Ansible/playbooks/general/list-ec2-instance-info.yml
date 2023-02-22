@@ -1,0 +1,52 @@
+# This ansible playbook is to filter the EC2 instances based on their OS version, and list down their private IP address, hostname, key pair, and OS version.
+#
+# Prerequisites:
+# 1. AWS CLI installed and configured
+# 2. Boto package installed
+#
+# Arguments to be passed to this playbook:
+# 1. inventory_group: group of hosts on which this script is to be executed
+# 2. login_user: username to login to EC2 instances
+# 3. profile_name: AWS profile on which this script is to be executed
+# 4. filter_string: OS version to filter EC2 instances
+#
+# Command to run this playbook:
+# > ansible-playbook -i inventory1 list-ec2-instance-info.yml -e "inventory_group=ec2user login_user=ec2-user profile_name=bb-lonxt-sandbox-ADFS-Admin filter_string='Red Hat Enterprise Linux 8'"
+
+
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - ec2_instance_info:
+        profile: "{{ profile_name }}"
+      register: ec2
+    - set_fact:
+        ec2_info: "{{ ec2_info|default([]) + [ {'hostname': item.tags.Name|default(), 'ipaddress': item.private_ip_address|default(), 'keyname': item.key_name|default()} ] }}"
+      loop: "{{ ec2.instances }}"
+
+- hosts: "{{ inventory_group }}"
+  remote_user: "{{ login_user }}"
+  gather_facts: no
+  vars:
+    shared_variable: "{{ hostvars['localhost']['ec2_info'] }}"
+  become: yes
+  tasks:
+    - shell: hostname -I | awk '{print $1}' && grep -Po 'PRETTY_NAME="\K[^"]*' /etc/os-release
+      register: cmd_out
+    - block:
+      - set_fact:
+          final_output: "{% if item.ipaddress == cmd_out.stdout_lines[0] %}{{ final_output|default([]) + [ {'hostname': item.hostname|default(), 'ipaddress': item.ipaddress|default(), 'keyname': item.keyname|default(), 'osversion': cmd_out.stdout_lines[1]|default()} ] }}{% else %}{{ final_output|default([]) + [] }}{% endif %}"
+        loop: "{{ shared_variable }}"
+      - name: write output to a file
+        lineinfile:
+          path: output.json
+          line: "{{ final_output | to_json }}"
+          create: yes
+        delegate_to: localhost
+        throttle: 1
+      - name: display private IP address, hostname, key pair, and OS version
+        debug:
+          var: final_output
+      when: cmd_out.stdout_lines[1] is match(".*{{ filter_string }}.*")

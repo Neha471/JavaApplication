@@ -1,0 +1,22 @@
+---
+- name: Create directory
+  file:
+    path: /tmp/falcon-sensor-installation-files
+    state: directory
+
+- name: List S3 bucket items
+  aws_s3:
+    profile: "{{ profile }}"
+    bucket: "{{ bucket }}"
+    mode: list
+  register: s3_bucket_items
+
+- name: Download S3 bucket items to directory
+  aws_s3:
+    profile: "{{ profile }}"
+    bucket: "{{ bucket }}"
+    object: "{{ item }}"
+    dest: "/tmp/falcon-sensor-installation-files/{{ item }}"
+    mode: get
+    overwrite: never
+  with_items: "{{ s3_bucket_items.s3_keys }}"

@@ -1,0 +1,2 @@
+domain_suffix: blackbaudcloud.com
+hosted_zone: '{{domain_prefix|default(inventory_id)}}.{{domain_suffix}}'

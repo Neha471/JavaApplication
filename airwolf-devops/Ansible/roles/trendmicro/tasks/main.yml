@@ -1,0 +1,13 @@
+---
+- name: Checking if TrendMicro service exists
+  shell: |
+    export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin:/bin/bash
+    service ds_agent status
+  register: trendmicro_status
+  failed_when: false
+
+- debug: msg="{{ trendmicro_status.stdout }}"
+
+- name: Installing TrendMicro Deep Security agent
+  include_tasks: install.yml
+  when: trendmicro_status.rc != 0

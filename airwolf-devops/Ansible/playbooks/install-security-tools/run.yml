@@ -1,0 +1,38 @@
+# This playbook is responsible to install various security tools (Splunk, Falcon Sensor, and Trendmicro) on the given list of EC2 instances
+# Command to run this playbook:
+# ansible-playbook -i inventory/inventory -e "id=<inventory-id> loginuser=<login-user-name> profile=<profile-name> bucket=<bucket-name>" playbooks/install-security-tools/run.yml --ask-vault-pass
+
+---
+- name: Run pre-installation scripts
+  hosts: localhost
+  connection: local
+  become: yes
+  become_method: sudo
+  roles:
+    - roles/pre-installation
+
+- name: Install security tools
+  hosts: "{{ id }}"
+  remote_user: "{{ loginuser }}"
+  become: yes
+  become_method: sudo
+  roles:
+    - roles/splunk
+    - roles/falcon-sensor
+    - roles/trendmicro
+
+- name: Run post-installation scripts
+  hosts: localhost
+  connection: local
+  become: yes
+  become_method: sudo
+  roles:
+    - roles/post-installation
+
+- name: setup new user and ssh key auth into ec2 instance
+  hosts: "{{ id }}"
+  remote_user: "{{ loginuser }}"
+  become: yes
+  become_method: sudo
+  roles:
+    - roles/cmdb

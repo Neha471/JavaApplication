@@ -1,0 +1,23 @@
+# This playbook is to create a new user in ec2 instance.
+# Command to run this playbook:
+# ansible-playbook -i <inventory> -e "id=<inventory id> loginuser=<login-user-name> username=<user-name> key=<public-key-path>" create-user-ec2-instance.yml
+# Example:
+# ansible-playbook -i inventory/blackbaud-tools playbooks/create-user/create-user-ec2-instance.yml -e "id=ec2user loginuser=ec2-user username=nexpose key=key.pub"
+
+
+---
+- name: setup new user and ssh key auth into ec2 instance
+  hosts: "{{ id }}"
+  remote_user: "{{ loginuser }}"
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: create a new user
+      user:
+        name: "{{ username }}"
+    - name: copy public key to ~/.ssh/authorized_keys of new user
+      authorized_key:
+        user: "{{ username }}"
+        state: present
+        key: "{{ lookup('file', '{{ key }}') }}"
+

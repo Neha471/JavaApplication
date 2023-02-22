@@ -1,0 +1,5 @@
+ansible_connection: local
+ansible_python_interpreter: python
+aws_config : "{{lookup('env','AWS_CONFIG_FILE')    |default(lookup('env','HOME') + '/.aws/config',true)}}"
+aws_profile: "{{lookup('env','AWS_DEFAULT_PROFILE')|default('default',true)}}"
+aws_region : "{{lookup('env','AWS_DEFAULT_REGION') |default('us-east-1',true)}}"

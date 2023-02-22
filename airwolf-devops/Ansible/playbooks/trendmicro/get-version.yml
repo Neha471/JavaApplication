@@ -1,0 +1,34 @@
+# This playbook is responsible to get TrendMicro version on the given list of EC2 instances
+# Command to run this playbook:
+# ansible-playbook -i inventory/inventory -e "id=<inventory-id> loginuser=<login-user-name>" playbooks/trendmicro/get-version.yml
+
+---
+- name: Get TrendMicro version
+  hosts: "{{ id }}"
+  remote_user: "{{ loginuser }}"
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: Get IP address
+      shell: hostname -I
+      register: ip_address
+
+    - block:
+        - name: Get TrendMicro version, if installed (for yum, dnf, zypper)
+          shell: rpm -qa ds_agent
+          register: tm_version
+        - debug:
+            msg:
+              - "IP address: {{ ip_address.stdout }}"
+              - "TrendMicro version: {{ tm_version.stdout }} (if blank, TrendMicro is not installed)"
+      when: ansible_pkg_mgr == "yum" or ansible_pkg_mgr == "dnf" or ansible_pkg_mgr == "zypper"
+
+    - block:
+        - name: Get TrendMicro version, if installed (for apt)
+          shell: dpkg -s ds-agent
+          register: tm_version
+        - debug:
+            msg:
+              - "IP address: {{ ip_address.stdout }}"
+              - "TrendMicro version: {{ tm_version.stdout }} (if blank, TrendMicro is not installed)"
+      when: ansible_pkg_mgr == "apt"

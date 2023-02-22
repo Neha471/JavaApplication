@@ -1,0 +1,31 @@
+---
+- name: Get STS Credentials
+  hosts: localhost
+  gather_facts: no
+  
+  roles:
+    - roles/aws/sts/assume-role
+  tags: always
+
+- name: create dynamic-host group
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Get Instance IP Addresses From File
+      shell: cat /tmp/{{ account_name }}.txt
+      register: serverlist
+    - debug: msg={{ serverlist.stdout_lines }}
+  
+    - name: Add Instance IP Addresses to temporary inventory groups
+      add_host:
+        groups: dynamic_groups
+        hostname: "{{item}}"
+      with_items: "{{ serverlist.stdout_lines }}"
+
+- name: Security services Installation
+  hosts: dynamic_groups
+  remote_user: airwolf
+  become_method: su
+  roles:
+    - roles/trendmicro

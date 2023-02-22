@@ -1,0 +1,15 @@
+---
+# Required Parameters for Falcon Sensor installation
+
+amznlinux: falcon-sensor-6.31.0-12803.amzn1.x86_64.rpm
+amznlinux2: falcon-sensor-6.31.0-12803.amzn2.x86_64.rpm
+rhel6: falcon-sensor-6.31.0-12803.el6.x86_64.rpm
+rhel7: falcon-sensor-6.31.0-12803.el7.x86_64.rpm
+rhel8: falcon-sensor-6.31.0-12803.el8.x86_64.rpm
+centos6: CentOS6falcon-sensor-5.43.0-10801.el6.x86_64.rpm
+centos7: CentOS7-falcon-sensor-5.43.0-10801.el7.x86_64.rpm
+centos8: CentOS8-falcon-sensor-5.43.0-10801.el8.x86_64.rpm
+debian: falcon-sensor_6.31.0-12803_amd64_Debian_9_10.deb
+ubuntu: falcon-sensor_6.31.0-12803_amd64_Ubuntu16_18_20.deb
+
+cid_value: 03B0AFF961824B39B1E8B37D039DC679-96

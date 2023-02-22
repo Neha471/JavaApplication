@@ -1,0 +1,19 @@
+---
+# Required Parameters for cmdb
+cache_src: "/var/cache/servicenow"
+cache_dst: "/opt/cache"
+
+cid_value: 03B0AFF961824B39B1E8B37D039DC679-96
+
+rpm_flags: "--noscripts --relocate /var/cache=/opt/cache"
+rpm: agent-client-collector-2.9.0-el7-x86_64.rpm
+
+snusr: "svc_accv"
+sngrp: "svc_accv"
+homedir: "/usr/share/servicenow/agent-client-collector"
+descr: "ServiceNow Agent Client Collector"
+api_key: "09109447874091d075f3a8ad3fbb35f1"
+wss: "wss://s00aace01wrk.ops.blackbaud.com:443/ws/events"
+
+allow_list: "/etc/servicenow/agent-client-collector/check-allow-list.json"
+

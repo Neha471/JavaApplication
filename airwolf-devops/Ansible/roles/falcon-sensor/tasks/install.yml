@@ -1,0 +1,95 @@
+# Install Falcon Sensor
+---
+# Detect the platform architecture and package manager
+- name: Setting facts (yum)
+  set_fact:
+    agent_remote_path: /tmp/falcon-sensor.rpm
+    disable_gpg_check_value: no
+  when: ansible_pkg_mgr == "yum" or ansible_pkg_mgr == "dnf"
+
+- name: Setting facts (apt)
+  set_fact:
+    agent_remote_path: /tmp/falcon-sensor.deb
+  when: ansible_pkg_mgr == "apt"
+
+- name: Setting facts (Amazon Linux)
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ amznlinux }}"
+  when: (ansible_kernel | regex_search('(amzn1)')) == "amzn1"
+
+- name: Setting facts (Amazon Linux 2) 
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ amznlinux2 }}"
+  when: (ansible_kernel | regex_search('(amzn2)')) == "amzn2"
+
+- name: Setting facts (RHEL6)
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ rhel6 }}"
+  when: ansible_distribution == "RedHat" and ansible_distribution_major_version == "6"
+
+- name: Setting facts (RHEL7)
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ rhel7 }}"
+  when: ansible_distribution == "RedHat" and ansible_distribution_major_version == "7"
+
+- name: Setting facts (RHEL8)
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ rhel8 }}"
+    disable_gpg_check_value: yes
+  when: ansible_distribution == "RedHat" and ansible_distribution_major_version == "8"
+
+- name: Setting facts (CentOS6)
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ centos6 }}"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
+
+- name: Setting facts (CentOS7)
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ centos7 }}"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"
+
+- name: Setting facts (CentOS8)
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ centos8 }}"
+    disable_gpg_check_value: yes
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "8"
+
+- name: Setting facts (Debian) 
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ debian }}"
+  when: ansible_distribution == "Debian"
+
+- name: Setting facts (Ubuntu) 
+  set_fact:
+    agent_local_path: "/tmp/falcon-sensor-installation-files/{{ ubuntu }}"
+  when: ansible_distribution == "Ubuntu"
+
+- debug:
+    msg:
+      - "agent_local_path: {{ agent_local_path }}"
+      - "agent_remote_path: {{ agent_remote_path }}"
+
+# Upload agent from local to remote
+- name: Upload Falcon Sensor installation file
+  copy:
+    src: "{{ agent_local_path }}"
+    dest: "{{ agent_remote_path }}"
+
+# Install Falcon Sensor
+- name: Install Falcon Sensor (yum)
+  yum: 
+    name: "{{ agent_remote_path }}"
+    state: present
+    disable_gpg_check: "{{ disable_gpg_check_value }}"
+  when: ansible_pkg_mgr == "yum" or ansible_pkg_mgr == "dnf"
+- name: Install Falcon Sensor (apt)
+  apt: 
+    deb: "{{ agent_remote_path }}"
+    state: present
+  when: ansible_pkg_mgr == "apt"
+
+# Configure Falcon Sensor
+- name: Run configuration commands
+  shell: |
+    /opt/CrowdStrike/falconctl -s --cid={{ cid_value }}
+    service falcon-sensor start

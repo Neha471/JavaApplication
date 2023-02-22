@@ -1,0 +1,13 @@
+---
+- name: Checking if Splunk service exists
+  shell: |
+    export PATH=$PATH:/usr/local/sbin:/usr/sbin:/sbin:/bin/bash
+    service splunk status
+  register: splunk_status
+  failed_when: false
+
+- debug: msg="{{ splunk_status.stdout }}"
+
+- name: Installing Splunk
+  include_tasks: install.yml
+  when: splunk_status.rc != 0

@@ -1,0 +1,8 @@
+---
+- name: Get STS Credentials
+  hosts: localhost
+  gather_facts: no
+  
+  roles:
+    - roles/aws/sts/assume-role
+  tags: always

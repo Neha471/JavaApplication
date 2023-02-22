@@ -1,0 +1,42 @@
+---
+######################################################################
+## assume role
+##
+## - takes account_name and role as input
+## - executes aws sts assume-role
+## - save credentials as 'env' fact
+##
+## note:
+## - if you want to save the credentials in a different fact, then
+##   pass the name as 'var' to override
+##
+######################################################################
+- name: Include vars
+  include_vars:
+    dir: vars
+
+- name: AWS Get STS Credentials
+  local_action:
+    module: sts_assume_role
+    profile: "{{ account_name }}-{{ iam_role }}"
+    region: '{{aws_region}}'
+    role_arn: 'arn:aws:iam::{{accounts[account_name]}}:role/{{iam_role}}'
+    role_session_name: "{{((current_user|default('ansible')).split('/'))[-1]}}"
+  register: assumed_role
+  when: sts
+
+# Get EC2 Instaces details
+- ec2_instance_info: 
+    aws_access_key: "{{ hostvars['localhost']['assumed_role'].sts_creds.access_key }}"
+    aws_secret_key: "{{ hostvars['localhost']['assumed_role'].sts_creds.secret_key }}"
+    security_token: "{{ hostvars['localhost']['assumed_role'].sts_creds.session_token }}"
+  register: ec2_info
+
+- set_fact:
+    msg: "{{ ec2_info | json_query('instances[*].private_ip_address') }} "
+- debug: var=msg
+
+- local_action: 
+    module: copy 
+    content: "{{ msg|join('\n') }}"
+    dest: /tmp/{{ account_name }}.txt

@@ -1,0 +1,11 @@
+---
+- name: Checking if Falcon Sensor service exists
+  shell: ps -e | grep falcon-sensor
+  register: falcon_status
+  failed_when: false
+
+- debug: msg="{{ falcon_status.stdout }}"
+
+- name: Installing Falcon Sensor
+  include_tasks: install.yml
+  when: falcon_status.rc != 0

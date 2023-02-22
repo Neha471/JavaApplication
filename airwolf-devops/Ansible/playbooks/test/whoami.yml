@@ -1,0 +1,15 @@
+## ------------------------------------------------------------------------
+## ansible-playbook -i inventory/<file name> test/whoami.yml -e id=default
+## Example:
+## ansible-playbook -i inventory/blackbaud-tools playbooks/test/whoami.yml -e id=ec2user
+## ------------------------------------------------------------------------
+---
+# This playbook determines the user running the playbook
+- name: show return value of command module
+  hosts: "{{ id }}"
+  remote_user: ec2-user
+  tasks:
+    - name: capture output of id command
+      command: id -un
+      register: login
+    - debug: var=login

@@ -1,0 +1,4 @@
+---
+# vars file for aws/sts/assume-role
+iam_role: ADFS-Admin
+sts: true

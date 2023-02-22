@@ -1,0 +1,12 @@
+---
+# Required Parameters for TM installation
+dsm_agent_download_hostname: app.deepsecurity.trendmicro.com
+dsm_agent_download_port: 443
+
+dsm_agent_activation_hostname: agents.deepsecurity.trendmicro.com
+dsm_agent_activation_port: 443
+
+tenant_id: 2D891AAB-CEA4-B372-3177-7DF54D47FF17
+token: 3B680114-A604-C257-3788-B3446882D822
+
+policy_id: 13205

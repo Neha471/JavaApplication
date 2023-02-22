@@ -1,0 +1,104 @@
+# Install the Deep Security Agent
+---
+# Detect the platform architecture and package manager
+- name: Setting facts (yum, dnf, zypper)
+  set_fact:
+    package_name: agent.rpm
+  when: ansible_pkg_mgr == "yum" or ansible_pkg_mgr == "dnf" or ansible_pkg_mgr == "zypper"
+
+- name: Setting facts (apt)
+  set_fact:
+    package_name: agent.deb
+  when: ansible_pkg_mgr == "apt"
+
+- name: Setting facts (Amazon Linux)
+  set_fact:
+    agent_relative_path: amzn1/{{ ansible_architecture }}
+  when: (ansible_kernel | regex_search('(amzn1)')) == "amzn1"
+
+- name: Setting facts (Amazon Linux 2)
+  set_fact:
+    agent_relative_path: amzn2/{{ ansible_architecture }}
+  when: (ansible_kernel | regex_search('(amzn2)')) == "amzn2"
+
+- name: Setting facts (CentOS, RHEL) 
+  set_fact:
+    agent_relative_path: RedHat_EL{{ ansible_distribution_major_version }}/{{ ansible_architecture }}
+  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS"
+
+- name: Setting facts (Ubuntu) 
+  set_fact:
+    agent_relative_path: Ubuntu_{{ ansible_distribution_major_version }}.04/{{ ansible_architecture }}
+  when: ansible_distribution == "Ubuntu"
+
+- name: Setting facts (Debian) 
+  set_fact:
+    agent_relative_path: Debian_{{ ansible_distribution_major_version }}/{{ ansible_architecture }}
+  when: ansible_distribution == "Debian"
+
+- name: Setting facts (OracleLinux)
+  set_fact:
+    agent_relative_path: Oracle_OL{{ ansible_distribution_major_version }}/{{ ansible_architecture }}
+  when: ansible_distribution == "OracleLinux"
+
+# Download Deep Security agent from Deep Security manager
+- debug:
+    msg: "Download from: https://{{ dsm_agent_download_hostname }}:{{ dsm_agent_download_port }}/software/agent/{{ agent_relative_path }}/{{ package_name }}?tenantID=46930"
+
+- name: Download the Deep Security agent
+  get_url: 
+    url: "https://{{ dsm_agent_download_hostname }}:{{ dsm_agent_download_port }}/software/agent/{{ agent_relative_path }}/{{ package_name }}?tenantID=46930"
+    dest: "/tmp/{{ package_name }}"
+    validate_certs: no
+    timeout: 300
+    force: yes
+
+- stat:
+    path: "/tmp/{{ package_name }}"
+  register: agent_file
+
+- name: Check file size
+  debug:
+    msg: "Downloaded DSA installer file size : {{ agent_file.stat.size }} bytes"
+
+- fail:
+    msg:
+      - "Downloaded file size is not valid. There are two possiblities : 1. The OS platform is not supported. 2. Deep Security Manager don't provide agent software package installer for your OS platform."
+      - "Please verify that agent software package for your platform is available using this reference article https://help.deepsecurity.trendmicro.com/Get-Started/Install/import-agent-software.html"
+  when: agent_file.stat.size == 0
+
+# * Install the agent
+# ******************************
+# Both RPM and DPKG managers will do upgrade if downloaded package version is newer than installed. 
+# If versions are equals, no operation. If older than installed, some managers will throw error.
+- name: Install the Deep Security agent (yum, dnf, zypper)
+  shell: rpm -ihv /tmp/{{ package_name }}
+  when: ansible_pkg_mgr == "yum" or ansible_pkg_mgr == "dnf" or ansible_pkg_mgr == "zypper"
+
+- name: Install the Deep Security agent (apt)
+  shell: dpkg -i /tmp/{{ package_name }}
+  when: ansible_pkg_mgr == "apt"
+
+- name: Make sure the agent has gathered the required metadata
+  pause: 
+    seconds: 15
+
+# * Make sure the service is running
+# *********************************************************************
+# We ignore "[warnning]Consider using service module rather than running service" here because there's no proper service checking function in "Service" module
+- name: Get service 'ds_agent' status 
+  shell: "service ds_agent status"
+  args: 
+    warn: false
+  register: result
+
+- name: Check service is on
+  fail:
+    msg: "Failed to start agent service"
+  when: (result.stdout | regex_search('(running)')) != "running"
+
+- debug:
+    msg: "ds_agent package installed successfully"
+
+- include_tasks: activate.yml
+  when: (result.stdout | regex_search('(running)')) == "running"

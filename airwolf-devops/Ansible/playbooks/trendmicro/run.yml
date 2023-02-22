@@ -1,0 +1,12 @@
+# This playbook is responsible to install TrendMicro on the given list of EC2 instances
+# Command to run this playbook:
+# ansible-playbook -i inventory/inventory -e "id=<inventory-id> loginuser=<login-user-name>" playbooks/trendmicro/run.yml
+
+---
+- name: Install and activate Trendmicro
+  hosts: "{{ id }}"
+  remote_user: "{{ loginuser }}"
+  become: yes
+  become_method: sudo
+  roles:
+    - roles/trendmicro
