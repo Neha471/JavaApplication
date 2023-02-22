@@ -1,3 +1,211 @@
 ---
-- include_tasks: create-user.yml
-- include_tasks: work.yml
+- name: "Create User"
+  vars:
+          user: "{{ createuser }}"
+          username: mid-user
+          sudo_access: "{{ username }}        ALL=(root) NOPASSWD: /usr/sbin/dmidecode, /usr/sbin/lsof"
+  tasks:
+    - name: create a new user
+      user:
+        name: "{{ username }}"
+    - name: copy public key to ~/.ssh/authorized_keys of new user
+      authorized_key:
+        user: "{{ username }}"
+        state: present
+        key: "{{ lookup('file', '{{ key }}') }}"
+    - name: Write the sudoers entry
+      lineinfile:
+        dest: /etc/sudoers
+        insertafter: EOF
+        line: "{{ sudo_access }}"
+        state: present
+        create: no
+      when: ansible_distribution_major_version <= "5"
+    - name: Write the sudoers file
+      lineinfile:
+        dest: /etc/sudoers.d/{{ username }}
+        line: "{{ sudo_access }}"
+        state: present
+        create: yes
+        mode: 0440
+      when: ansible_distribution_major_version > "5"
+  when: user == "User" 
+
+- name: "main file"
+  tasks:
+    - name: Download rpm
+    ansible.builtin.get_url:
+      url: https://install.service-now.com/glide/distribution/builds/package/app-signed/agent-client-collector-2.9.0-el7-x86_64.rpm
+      dest: /tmp/
+
+#https://install.service-now.com/glide/distribution/builds/package/app-signed/agent-client-collector-2.9.0-el7-x86_64.rpm
+### query for existing agent installed +++ rpm --quiet -q agent-client-collector
+  - name: Checking if agentcollector service exists
+    shell: |
+      rpm -q agent-client-collector
+    register: agent_status
+    failed_when: false
+
+  - debug: msg="{{ agent_status.stdout }}"
+  - debug: msg="{{ agent_status.rc }}"
+
+  - name: Install rpm package.
+    yum:
+     name: /tmp/{{ rpm }}
+     state: present
+    when: agent_status.rc != 0 and "is already installed" not in agent_status.stderr
+  
+  - name: Update rpm package.
+    yum:
+     name: /tmp/{{ rpm }}
+     state: latest
+     update_only: True
+    when: agent_status.rc == 0
+
+### We need to have service now at this location /opt/cache
+  - name: Copy files to relocate service now files to new location
+    copy: remote_src=True src={{ cache_src }} dest={{ cache_dst }}
+
+  - name: Creating a acc.service file
+    copy:
+      dest: "/usr/lib/systemd/system/acc.service"
+      content: |
+        [Unit]
+        Description=Agent-Now acc
+        After=network-online.target
+
+        [Service]
+        Environment=AGENT_ROOT=/usr/share
+        Environment=AGENT_CACHE_ROOT={{ cache_dst }}
+        Environment=AGENT_CONFIG_ROOT=/etc
+        Environment=AGENT_LOG_ROOT=/var/log
+        Environment=AGENT_RUN_ROOT=/var/run
+        Environment=RUBYOPT=-Eutf-8
+        User={{ snusr }}
+        Group={{ sngrp }}
+        ExecStart=/usr/share/servicenow/agent-client-collector/bin/acc-service start acc
+        KillMode=process
+        Restart=on-failure
+        RestartSec=1min
+        CPUShares=128
+        CPUQuota=10%
+        MemoryLimit=192M
+        BlockIOWeight=10
+        LimitNICE=+15
+
+        [Install]
+        WantedBy=network-online.target
+
+  - name: Creating a new acc.yml file
+    copy:
+      dest: "/etc/servicenow/agent-client-collector/acc.yml"
+      content: |
+        backend-url:
+          -  "{{ wss }}"
+        api-key: "{{ api_key }}"
+        log-level: "info"
+        insecure-skip-tls-verify: true
+        allow-list: {{ allow_list }}
+        verify-plugin-signature: true
+        max-running-checks: 10
+        disable-sockets: true
+        disable-api: true
+        statsd-disable: true
+        enable-auto-mid-selection: false
+        agent_cpu_threshold:
+          cpu_percentage_limit: 25
+          repeated_high_cpu_num: 3
+          monitor_interval_sec: 60
+          agent_cpu_threshold_disabled: false
+
+  - name: Creating a json check-allow-list file
+    copy:
+      dest: "/etc/servicenow/agent-client-collector/check-allow-list.json"
+      content: |
+        [
+          {  
+            "args":[    
+              ""
+            ],
+            "exec":"endpoint_discovery.rb",
+            "skip_arguments":true
+          },
+          {  
+            "args":[    
+              ""
+            ],
+            "exec":"live_ci_view.rb",
+            "skip_arguments":false
+          },
+          {  
+            "args":[    
+              ""
+            ],
+            "exec":"osqueryi",
+            "skip_arguments":true
+          },
+          {  
+            "args":[    
+              "agent"
+            ],
+            "exec":"Restart",
+            "skip_arguments":false
+          },
+          {  
+            "args":[    
+              ""
+            ],
+            "exec":"sam_processor.rb",
+            "skip_arguments":false
+          }
+        ]
+  
+  - name: checking snusr
+    user: 
+      name: "{{ snusr }}"
+      state: present
+    check_mode: yes
+    register: svc_accv
+
+  - name: output result above
+    debug:
+      msg: "{{ svc_accv }}"
+
+### create user and apply proper file ownership
+  - name: create user and apply proper file ownership
+    ansible.builtin.user:
+      name: "{{ snusr }}"
+      state: present
+      shell: /bin/false
+      system: false
+      create_home: true
+      home: "{{ homedir }}"
+      comment: "{{ descr }}"
+    ignore_errors: yes
+
+### (re-)apply file ownership
+  - name: apply proper file ownership
+    shell: |
+      chown -R "{{ snusr }}:{{ sngrp }}" {/etc,/var/log,{{ cache_dst }}}/servicenow
+
+### configure sudo for the user
+  - name: configure sudo for the user
+    copy:
+      dest: "/etc/sudoers.d/01_servicenow"
+      content: |
+        User_Alias     ACC_USERS = {{ snusr }}
+        Cmnd_Alias     ACC_CMD = /sbin/dmidecode, /sbin/ss
+        ACC_USERS      ALL = (root) NOPASSWD:ACC_CMD
+
+### start the service
+#systemctl daemon-reload
+#systemctl start acc
+#message received
+#/usr/share/servicenow/agent-client-collector/bin/acc self-test
+  - name: start and validate the service
+    shell: |
+      systemctl daemon-reload
+      systemctl start acc
+      /usr/share/servicenow/agent-client-collector/bin/acc start
+    register: rpm_install
+    ignore_errors: yes
